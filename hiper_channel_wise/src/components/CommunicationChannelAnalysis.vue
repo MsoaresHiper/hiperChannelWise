@@ -1,13 +1,16 @@
 <template>
   <div>
-    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h1>HiperHUB</h1>
-      <select v-model="selectedOperator" @change="updateData">
-        <option value="vivo">Vivo</option>
-        <option value="claro">Claro</option>
-      </select>
-    </header>
-    <table>
+    <div class="header-container">
+      <img src="https://via.placeholder.com/1500x500" alt="Header Image" class="header-image">
+      <div class="search-container">
+        <input type="text" v-model="searchQuery" @keyup.enter="updateData" placeholder="Search..." class="search-input">
+        <select v-model="selectedOperator" @change="updateData" class="operator-select">
+          <option value="vivo">Vivo</option>
+          <option value="claro">Claro</option>
+        </select>
+      </div>
+    </div>
+    <table v-if="searchQuery">
       <thead>
         <tr>
           <th>Name</th>
@@ -31,7 +34,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, onMounted, watch } from 'vue';
 import { Client, Company } from '../types';
 
 export default defineComponent({
@@ -39,6 +42,7 @@ export default defineComponent({
   setup() {
     const users = ref<Client[]>([]);
     const selectedOperator = ref<string>('vivo');
+    const searchQuery = ref('');
 
     async function fetchUsers() {
       try {
@@ -51,6 +55,11 @@ export default defineComponent({
           item.company.toLowerCase() === selectedOperator.value.toLowerCase()
         );
         users.value = selectedData ? selectedData.customers : [];
+        if (searchQuery.value) {
+          users.value = users.value.filter(user =>
+            user.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+          );
+        }
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -63,9 +72,14 @@ export default defineComponent({
 
     onMounted(fetchUsers);
 
+    watch(searchQuery, () => {
+      fetchUsers();
+    });
+
     return {
       users,
       selectedOperator,
+      searchQuery,
       updateData
     };
   }
@@ -73,9 +87,36 @@ export default defineComponent({
 </script>
 
 <style scoped>
-header {
-  background-color: #f5f5f5;
-  padding: 10px;
+.header-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.header-image {
+  width: 100%;
+  height: auto;
+  transition: height 0.3s;
+}
+
+.search-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 8px 15px;
+  margin-right: 10px;
+  flex-grow: 1;
+}
+
+.operator-select {
+  border-radius: 5px;
 }
 
 table {
@@ -83,9 +124,9 @@ table {
   border-collapse: collapse;
 }
 
-th,
-td {
+th, td {
   border: 1px solid #ddd;
   padding: 8px;
 }
 </style>
+
